@@ -39,7 +39,9 @@ class InstrumentList extends React.Component {
     Allcheckboxcontent: [], //全選抓資料
     AllProductStatus: [], // 裝切換狀態的資料
     AllPageData:[],// 頁數內資料
-    
+    AllSearchData:[], // 搜尋
+    searchText:'',
+    searchstatus:false,
   }
 
   bokTop() {
@@ -70,6 +72,7 @@ class InstrumentList extends React.Component {
         this.setState({
           AllManuProduct: json,
           AllProductStatus: json,
+          AllSearchData:json,
         })
         setTimeout(()=>{
           this.showData()
@@ -232,7 +235,8 @@ class InstrumentList extends React.Component {
         this.setState({ selectPage : '1'})
         if (status == '全部') {
           setTimeout(() => {
-            this.setState({ AllProductStatus: this.state.AllManuProduct })
+            this.setState({ AllProductStatus: this.state.AllManuProduct,
+          })
           }, 10)
 
           setTimeout(() => {
@@ -244,7 +248,10 @@ class InstrumentList extends React.Component {
         } else {
           let data = this.state.AllManuProduct.filter((v) => v.PState == status)
           console.log(data)
-          this.setState({ AllProductStatus: data })
+          this.setState({ 
+            AllProductStatus: data,
+            
+          })
           console.log(this.state.AllProductStatus)
           setTimeout(() => {
             this.showData()
@@ -255,15 +262,7 @@ class InstrumentList extends React.Component {
       })
     }
     
-    // this.SendSearch = e =>{
-    //   let search = document.querySelector('.ins-list-inp').value
-    //   // alert(search)
-    //   const name = this.state.AllManuProduct.map(
-    //     (v) => v.PName).indexOf(search)
-
-    //     console.log(name)
-    //     this.setState({ AllProductStatus : name})
-    // }
+    
   }
   PageNumRight = () => {
     let total = Math.ceil(this.state.AllProductStatus.length / 3)
@@ -303,14 +302,62 @@ class InstrumentList extends React.Component {
     this.bokTop()
   }
 
-  showData () {
+  showData (value) {
     let OrderList , OrderListItem
     let PageNum = this.state.PageNum
-    this.setState({ AllPageData : this.state.AllProductStatus.slice((PageNum - 1) * 5, PageNum * 5),
+    let text = value
+    let _product = [...this.state.AllSearchData]
+    _product = _product.filter(p => {
+          const matchArray = p.PName.match(new RegExp(text,'gi'))
+          return !!matchArray
+        })
+    if(_product){
+      this.setState({
+        AllPageData : _product.slice((PageNum - 1) * 5, PageNum * 5),
+        
+      })
+    }else{
+      this.setState({ AllPageData : this.state.AllProductStatus.slice((PageNum - 1) * 5, PageNum * 5),
+        
     })
-    
     this.bokTop()
   }
+}
+
+
+  searchchange = e => {
+    const value = e.target.value
+    console.log(value)
+    if(value){
+    this.setState({
+      searchText : value,
+      searchstatus:true,
+    })
+    this.showData(value)
+    }
+    
+  }
+
+  clearsearch = () =>{
+    this.setState({
+      searchText:'',
+      searchstatus:false,
+    })
+  }
+
+  // search = text => {
+  //   console.log(text)
+  //   let _product = [...this.state.AllSearchData]
+
+  //   _product = _product.filter(p => {
+  //     const matchArray = p.PName.match(new RegExp(text,'gi'))
+  //     return !!matchArray
+  //   })
+  //   let PageNum = this.state.PageNum
+  //   this.setState({
+  //     AllPageData : _product.slice((PageNum - 1) * 5, PageNum * 5),
+  //   })
+  // }
 
   // handlecheck = (e) => {
   //   const check = document.querySelectorAll('.ins-list-content-chk')
@@ -330,6 +377,22 @@ class InstrumentList extends React.Component {
   render() {
 
     let PageItem = []
+    if(this.state.searchstatus){
+      for (let i = 1; i <= Math.ceil(this.state.AllPageData.length / 5); i++){
+        PageItem.push(
+          <button
+          onClick={this.changePageNum}
+          className={
+            this.state.selectPage === i + ''
+                ? 'ins-page-number ins-page-numberHover'
+                : 'ins-page-number'
+          }
+          >
+            {i}
+          </button>
+        )
+      }
+    }else{
     for (let i = 1; i <= Math.ceil(this.state.AllProductStatus.length / 5); i++){
       PageItem.push(
         <button
@@ -344,6 +407,8 @@ class InstrumentList extends React.Component {
         </button>
       )
     }
+  }
+  
     let AllPageData = this.state.AllPageData
     // let { AllProductStatus } = this.state
     // console.log(this.state.AllProductStatus)
@@ -400,10 +465,11 @@ class InstrumentList extends React.Component {
               type="text"
               className="ins-list-inp"
               placeholder="請輸入關鍵字"
+              value={this.state.searchText}
+              onChange={this.searchchange}
             />
-            <p>請輸入商品關鍵字</p>
-            <button type="button" className="ins-list-search-btn">
-              送出
+            <button type="button" className="ins-list-search-btn" onClick={this.clearsearch}>
+              X
             </button>
           </label>
         </form>
@@ -437,7 +503,7 @@ class InstrumentList extends React.Component {
           <p>目前所有商品數量為 : {this.state.AllManuProduct.length} 筆</p>
         </div>
         {AllPageData.map((product, index) => (
-          <form className="ins-list-product">
+          <form className="ins-list-product" key={product.PId}>
             <div className="ins-list-state">
               <p className="font-size-185rem">商品編號 : {product.PId}</p>
               <p className="font-size-185rem">商品狀態 : {product.PState}</p>
